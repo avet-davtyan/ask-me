@@ -1,6 +1,8 @@
 import express from "express";
 import cors from "cors";
 import apiRoutes from "./api-routes";
+import { errorHandler } from "./util/error-handler.util";
+import { requestPrepare } from "./util/request.util";
 
 const app = express();
 
@@ -11,6 +13,8 @@ app.use(cors({
   allowedHeaders: "*",
 }));
 
+app.use(requestPrepare);
 app.use("/", apiRoutes);
+app.use(errorHandler);
 
 export default app;

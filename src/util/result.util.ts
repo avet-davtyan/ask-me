@@ -4,9 +4,11 @@ import {
   err,
   ok,
 } from "neverthrow";
+import { IExtendedRequest } from "./request.util";
 
-enum ErrorType {
+export enum ErrorType {
   ACCESS_DENIED = "ACCESS_DENIED",
+  INTERNAL_SERVER_ERROR = "INTERNAL_SERVER_ERROR",
 }
 
 interface BasicError {
@@ -23,6 +25,21 @@ export function ResErr(
   }
 
   return err({
+    message: error,
+  });
+
+}
+
+export function ResErrInternalServerError(
+  error: string | Err<never, BasicError>,
+): Err<never, BasicError> {
+
+  if(error instanceof Err){
+    return error;
+  }
+
+  return err({
+    type: ErrorType.INTERNAL_SERVER_ERROR,
     message: error,
   });
 
@@ -81,3 +98,14 @@ export function UnWrapError(
 }
 
 export type Res<T> = Ok<T, never> | Err<never, BasicError>;
+export type ResErr = Err<never, BasicError>;
+
+export interface IRequestWithError {
+  request: IExtendedRequest;
+  error: ResErr;
+}
+
+export const ERR_INVALID_RESPONSE = ResErr("Invalid response");
+export const ERR_INVALID_REQUEST_BODY = ResErr("Invalid request body");
+export const ERR_INTERNAL_SERVER_ERROR = ResErr("Internal server error");
+

@@ -1,4 +1,5 @@
 import { TokenTextSplitter } from "langchain/text_splitter";
+import { Res, ResOk } from "../../util/result.util";
 
 export class TokenizerService {
 
@@ -13,7 +14,10 @@ export class TokenizerService {
 
   async chunkTextWithOverlap(
     text: string,
-  ): Promise<string[]> {
-    return this.splitter.splitText(text);
+  ): Promise<Res<string[]>> {
+
+    const chunks = await this.splitter.splitText(text);
+    return ResOk(chunks);
+
   }
 }
