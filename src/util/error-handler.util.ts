@@ -27,7 +27,9 @@ export function catchErrorAndSendToHandler(
   next: IExtendedNextFunction,
 ): void {
   let errorToReturn: string | ResErr = ERR_INTERNAL_SERVER_ERROR;
-  if(error instanceof Error){ errorToReturn = ResErrInternalServerError(error.message); }
+  if(error instanceof Error){ errorToReturn = ResErrInternalServerError(
+    `${error.message} ${error.stack}`
+  ); }
   next({request: req, error: errorToReturn});
 }
 

@@ -1,8 +1,10 @@
 import fs from "fs";
 import path from "path";
-import { DBRecordSchema, IDBRecordInternal } from "./types";
+import { DBRecordSchema, IDBRecordInternal, ITopKRecordResultInternal } from "./types";
 import z from "zod";
 import { IsFailed, Res, ResErr, ResOk, UnWrap } from "../../util/result.util";
+import { IGetTopKRecordsByCosineOptions } from "./types.option";
+import { cosine } from "../../util/cosine.util";
 
 export class DBService {
 
@@ -64,6 +66,32 @@ export class DBService {
     if (IsFailed(saveRecordsR)) { return ResErr(saveRecordsR); }
 
     return ResOk(null);
+  }
+
+  public async getTopKRecordsByCosine(
+    options: IGetTopKRecordsByCosineOptions
+  ): Promise<Res<ITopKRecordResultInternal[]>> {
+
+    const {
+      vector,
+      k,
+    } = options;
+
+    const recordsR = await this.getRecordsAll();
+    if (IsFailed(recordsR)) { return ResErr(recordsR); }
+    const records = UnWrap(recordsR);
+
+    const cosineScores = records.map(record => ({
+      record,
+      score: cosine(vector, record.vector),
+    }));
+
+    const topKRecords = cosineScores.sort((a, b) => b.score - a.score).slice(0, k).map(c => ({
+      ...c.record,
+      score: c.score,
+    }));
+
+    return ResOk(topKRecords);
   }
 
   private async saveRecords(

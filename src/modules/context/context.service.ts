@@ -3,17 +3,71 @@ import { IsFailed, Res, ResErr, ResOk, UnWrap } from "../../util/result.util";
 import { SingletonManager } from "../../util/singleton-manager.util";
 import { DBService } from "../db/db.service";
 import { IDBRecordInternal } from "../db/types";
+import { generateContextualPrompt } from "../generation/generation.prompts";
+import { GenerationService } from "../generation/generation.service";
 import { TokenizerService } from "../tokenizer/tokenizer.service";
-import { IIngestDataOptions, IIngestDataResponse } from "./types.option";
+import { IStreamDataInternal, StreamDataType } from "./types";
+import { IGenerateResponseOptions, IIngestDataOptions, IIngestDataResponse } from "./types.option";
 
 export class ContextService {
 
   private readonly tokenizerService: TokenizerService;
   private readonly dbService: DBService;
+  private readonly generationService: GenerationService;
 
   constructor() {
     this.tokenizerService = SingletonManager.getInstance(TokenizerService);
     this.dbService = SingletonManager.getInstance(DBService);
+    this.generationService = SingletonManager.getInstance(GenerationService);
+  }
+
+  public async generateResponse(
+    options: IGenerateResponseOptions
+  ): Promise<Res<null>> {
+
+    const {
+      userQuery,
+      response,
+      topK,
+      maxTokens,
+    } = options;
+
+    const embeddingVectorR = await embedding.embedOne(userQuery);
+    if(IsFailed(embeddingVectorR)) { return ResErr(embeddingVectorR); }
+    const embeddingVector = UnWrap(embeddingVectorR);
+
+    const topKRecordsR = await this.dbService.getTopKRecordsByCosine({ vector: embeddingVector, k: topK });
+    if(IsFailed(topKRecordsR)) { return ResErr(topKRecordsR); }
+    const topKRecords = UnWrap(topKRecordsR);
+
+    const contextualPrompt = generateContextualPrompt(topKRecords);
+
+    const streamResponseR = await this.generationService.streamResponse({
+      userContent: userQuery,
+      assistantContent: contextualPrompt,
+      maxTokens,
+      onChunk: (chunk) => {
+        const streamData: IStreamDataInternal = {
+          type: StreamDataType.TOKEN,
+          text: chunk
+        }
+        response.write(`data: ${JSON.stringify(streamData)}\n\n`);
+      },
+      onFinal: () => {
+        const streamData: IStreamDataInternal = {
+          type: StreamDataType.FINAL,
+          citations: topKRecords.map(record => ({
+            id: record.id,
+            score: record.score,
+          })),
+        }
+        response.write(`data: ${JSON.stringify(streamData)}\n\n`);
+        response.end();
+      }
+    });
+    if(IsFailed(streamResponseR)) { return ResErr(streamResponseR); }
+
+    return ResOk(null);
   }
 
   public async ingestData(

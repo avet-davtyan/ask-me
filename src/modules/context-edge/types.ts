@@ -12,5 +12,12 @@ export const IngestResponseDTO = z.object({
   processingTimeMs: z.number(),
 });
 
+export const AskBodyDTO = z.object({
+  query: z.string(),
+  topK: z.number().optional().default(5),
+  maxTokens: z.number().optional().default(200),
+});
+
 export type IngestBodyDTO = z.infer<typeof IngestBodyDTO>;
 export type IngestResponseDTO = z.infer<typeof IngestResponseDTO>;
+export type AskBodyDTO = z.infer<typeof AskBodyDTO>;

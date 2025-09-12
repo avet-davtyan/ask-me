@@ -21,6 +21,7 @@
     "express": "^5.1.0",
     "langchain": "^0.3.33",
     "neverthrow": "^8.2.0",
+    "openai": "^5.20.1",
     "tiktoken": "^1.0.22",
     "winston": "^3.17.0",
     "zod": "^3.25.67"

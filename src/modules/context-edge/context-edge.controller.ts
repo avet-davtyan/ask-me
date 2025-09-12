@@ -2,6 +2,7 @@ import {
   Response,
 } from "express";
 import {
+  AskBodyDTO,
   IngestBodyDTO,
   IngestResponseDTO,
 } from "./types";
@@ -44,3 +45,33 @@ export const ingest = async (
   }
 
 };
+
+export const ask = async (
+  req: IExtendedRequest,
+  res: Response,
+  next: IExtendedNextFunction,
+) => {
+
+  try {
+
+    const requestBodyR = AskBodyDTO.safeParse(req.body);
+    if(!requestBodyR.success) { next({request: req, error: ERR_INVALID_REQUEST_BODY}); return; }
+    const requestBody = requestBodyR.data;
+
+    res.setHeader("Content-Type", "text/event-stream");
+    res.setHeader("Cache-Control", "no-cache");
+    res.setHeader("Connection", "keep-alive");
+
+    const responseR = await contextService.generateResponse({
+      userQuery: requestBody.query,
+      topK: requestBody.topK,
+      maxTokens: requestBody.maxTokens,
+      response: res,
+    });
+    if(IsFailed(responseR)) { next({request: req, error: responseR}); return; }
+
+  } catch (error){
+    catchErrorAndSendToHandler(error, req, next);
+  }
+
+}

@@ -1,3 +1,4 @@
+import { normalize } from "./cosine.util";
 import { Res, ResOk } from "./result.util";
 import { IEmbeddingModel, IEmbeddings } from "./types";
 
@@ -23,12 +24,21 @@ export class Embedding implements IEmbeddings {
     for (const text of texts) {
       const embedding = await model(text, {
         pooling: "mean",
-        normalize: true,
+        normalize: false,
       });
-      embeddings.push(Array.from(embedding.data));
+      embeddings.push(normalize(Array.from(embedding.data)));
     }
     return ResOk(embeddings);
 
+  }
+
+  async embedOne(text: string): Promise<Res<number[]>> {
+    const model = await getEmbeddingModel();
+    const embedding = await model(text, {
+      pooling: "mean",
+      normalize: true,
+    });
+    return ResOk(Array.from(embedding.data));
   }
 }
 

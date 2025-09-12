@@ -7,6 +7,10 @@ export interface IDBRecordInternal {
   vector: number[];
 }
 
+export interface ITopKRecordResultInternal extends IDBRecordInternal {
+  score: number;
+}
+
 export const DBRecordSchema = z.object({
   id: z.string(),
   text: z.string(),
