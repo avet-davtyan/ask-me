@@ -40,32 +40,27 @@ export class ContextService {
     if(IsFailed(topKRecordsR)) { return ResErr(topKRecordsR); }
     const topKRecords = UnWrap(topKRecordsR);
 
-    const contextualPrompt = generateContextualPrompt(topKRecords);
+    const contextualPrompt = generateContextualPrompt(topKRecords, userQuery);
 
-    const streamResponseR = await this.generationService.streamResponse({
-      userContent: userQuery,
-      assistantContent: contextualPrompt,
-      maxTokens,
-      onChunk: (chunk) => {
-        const streamData: IStreamDataInternal = {
-          type: StreamDataType.TOKEN,
-          text: chunk
-        }
-        response.write(`data: ${JSON.stringify(streamData)}\n\n`);
-      },
-      onFinal: () => {
-        const streamData: IStreamDataInternal = {
-          type: StreamDataType.FINAL,
-          citations: topKRecords.map(record => ({
-            id: record.id,
-            score: record.score,
-          })),
-        }
-        response.write(`data: ${JSON.stringify(streamData)}\n\n`);
-        response.end();
+    const chunks = this.generationService.stream(contextualPrompt, { maxTokens });
+
+    for await (const chunk of chunks) {
+      const streamData: IStreamDataInternal = {
+        type: StreamDataType.TOKEN,
+        text: chunk
       }
-    });
-    if(IsFailed(streamResponseR)) { return ResErr(streamResponseR); }
+      response.write(`data: ${JSON.stringify(streamData)}\n\n`);
+    }
+
+    const streamData: IStreamDataInternal = {
+      type: StreamDataType.FINAL,
+      citations: topKRecords.map(record => ({
+        id: record.id,
+        score: record.score,
+      })),
+    }
+    response.write(`data: ${JSON.stringify(streamData)}\n\n`);
+    response.end();
 
     return ResOk(null);
   }
