@@ -94,6 +94,13 @@ export class DBService {
     return ResOk(topKRecords);
   }
 
+  public async getRecordsCount(): Promise<Res<number>> {
+    const recordsR = await this.getRecordsAll();
+    if (IsFailed(recordsR)) { return ResErr(recordsR); }
+    const records = UnWrap(recordsR);
+    return ResOk(records.length);
+  }
+
   private async saveRecords(
     records: IDBRecordInternal[]
   ): Promise<Res<null>> {
