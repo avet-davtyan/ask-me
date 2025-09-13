@@ -37,7 +37,7 @@ async function main() {
     process.exit(0);
 
   } catch (err) {
-    console.error("Seed error:", err);
+    logger.error("Seed error:", err);
     process.exit(1);
   }
 }
