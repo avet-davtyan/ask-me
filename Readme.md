@@ -50,8 +50,15 @@ npm run seed
 
 ## Future Improvements
 
+### Embedding Model Integration
 Using embedding models directly in our server might be problematic since all Hugging Face packages are in ESM modules, which creates dynamic import problems. 
 
 **Potential solutions:**
 - Transfer the whole project to ESM modules
 - Create a separate local service (e.g., in Python) to handle embeddings
+
+### Process Management
+Currently, if an unhandled rejection occurs, the application will crash. To improve reliability and ensure continuous operation:
+
+**Recommended solution:**
+- Use **PM2** for process management and auto-restart capabilities
